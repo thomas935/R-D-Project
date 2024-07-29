@@ -3,7 +3,7 @@ paths:
   predictions: '../Data/Probabilities/Transformers/Predictions'
   targets: '../Data/Probabilities/Transformers/Targets'
 
-# Model and data parameters
+# Model Trained and data parameters
 models_name:
   - sexism
   - roberta
@@ -19,7 +19,7 @@ num_workers: 4
 persistent_workers: True
 shuffle: true
 
-# Model architecture
+# Model Trained architecture
 input_dim: 6
 output_dim: 1
 
@@ -51,7 +51,7 @@ wandb:
   key: 'dc45808b5077bb461397335e052f69badaad2620'
   project: "MetaModel"
 
-# Model filename
+# Model Trained filename
 model_filename: 'MetaModel.pth'
 
 # Ratios

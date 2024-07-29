@@ -2,7 +2,7 @@ models_name:
   - roberta
 #  - sentiment
 #  - sexism
-# Model parameters
+# Model Trained parameters
 model_parameters:
   train_hidden_dimensions:
     - 128
