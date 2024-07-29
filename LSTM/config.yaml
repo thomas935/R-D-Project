@@ -1,0 +1,80 @@
+models_name:
+  - roberta
+#  - sentiment
+#  - sexism
+# Model parameters
+model_parameters:
+  train_hidden_dimensions:
+    - 128
+  train_numbers_layers:
+    - 1
+
+  test_hidden_dimensions: 512
+  test_numbers_layers: 4
+  input_dim: 768
+  num_classes: 2
+  max_epochs: 20
+  learning_rate: 1e-5
+  batch_first: true
+  log_every_n_steps: 10
+
+# DataLoader parameters
+data_loader_parameters:
+  train_ratio: 0.9
+  val_ratio: 0.1
+  test_ratio: 1
+  batch_size: 16
+  num_workers: 0
+  shuffle: true
+  persistent_workers: false
+  embeddings_train_shape: [22360, 128, 768]
+  embeddings_test_shape: [5623, 128, 768]
+  embeddings_dtype: torch.float32
+  labels_dtype: torch.float32
+
+# Scheduler parameters
+scheduler:
+  scheduler_name: ReduceLROnPlateau
+  mode: min
+  factor: 0.1
+  patience: 5
+  verbose: true
+  threshold: 1e-3
+  threshold_mode: rel
+  cooldown: 0
+  min_lr: 0
+  eps: 1e-08
+  interval: epoch
+  frequency: 1
+  monitor: val_loss
+  strict: true
+
+# Paths
+paths:
+  path_to_train_data: ../Data/Embeddings/Train
+  path_to_test_data: ../Data/Embeddings/Test
+  path_to_train_label: ../Data/Labels/Train
+  path_to_test_label: ../Data/Labels/Test
+
+  path_to_model_directory: ../Data/LSTM models
+
+save:
+  save_n_probability: 1
+  path_to_save_predictions: ../Data/Probabilities/Predictions
+  path_to_save_targets: ../Data/Probabilities/Targets
+
+# Wandb parameters
+wandb_parameters:
+  wandbproject: training-lstm
+
+# Other parameters
+other_parameters:
+  columns: [hidden_dim, num_layers, F1_score, result]
+  file_output: model_parameters.csv
+  model_extension: .pth
+  f1_score_calculation: weighted
+  metrics: [mean, sum]
+
+steps:
+  - train
+  - test

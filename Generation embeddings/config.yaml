@@ -1,0 +1,38 @@
+models:
+  roberta:
+    model_name: roberta-base
+      # Path to the RoBERTa model directory
+
+  sexism:
+    model_name: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal  # Pre-trained XLM-RoBERTa model for sexism classification
+
+  sentiment:
+    model_name: cardiffnlp/twitter-roberta-base-sentiment  # Pre-trained RoBERTa model for sentiment analysis
+
+  path_model: ../Data/Transformers models
+
+models_name:
+#  - roberta
+  - sentiment
+#  - sexism
+
+save:
+  embeddings:
+    embeddings_save: embeddings.npy  # Filename for saving embeddings
+
+  labels:
+    labels_save: labels.npy  # Filename for saving labels
+  path: ../Data  # Directory path for saving embeddings and labels
+
+tokenizer_max_length: 128  # Maximum length for tokenization
+
+params:
+  batch_size: 16  # Batch size for data loading
+  shuffle: True  # Whether to shuffle the data during loading
+  num_workers: 4  # Number of worker processes for data loading
+
+path_train_data: ../Data/Dataset final/Train  # Path to the directory containing training data
+name_train_data: train_dataset.csv  # Filename for the training dataset
+
+path_test_data: ../Data/Dataset final/Test  # Path to the directory containing test data
+name_test_data: test_dataset.csv  # Filename for the test dataset

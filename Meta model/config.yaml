@@ -1,0 +1,59 @@
+# Paths
+paths:
+  predictions: '../Data/Probabilities/Transformers/Predictions'
+  targets: '../Data/Probabilities/Transformers/Targets'
+
+# Model and data parameters
+models_name:
+  - sexism
+  - roberta
+  - sentiment
+
+steps_name:
+  - Train
+  - Val
+  - Test
+
+batch_size: 64
+num_workers: 4
+persistent_workers: True
+shuffle: true
+
+# Model architecture
+input_dim: 6
+output_dim: 1
+
+hidden_size:
+  - 16
+
+num_layers:
+  - 1
+  - 2
+  - 3
+  - 4
+
+
+# Training parameters
+max_epochs: 500
+learning_rate: 1e-4
+
+# Scheduler parameters
+scheduler:
+  mode: 'min'
+  factor: 0.1
+  patience_schedular: 15
+  patience_early_stopping: 30
+  threshold_schedular: 0.001
+  threshold_early_stopping: 0.001
+
+# Wandb parameters
+wandb:
+  key: 'dc45808b5077bb461397335e052f69badaad2620'
+  project: "MetaModel"
+
+# Model filename
+model_filename: 'MetaModel.pth'
+
+# Ratios
+ratios:
+  - [0.7, 0.1, 0.2]
