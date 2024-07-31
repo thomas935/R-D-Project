@@ -9,7 +9,7 @@ models:
   sentiment:
     model_name: cardiffnlp/twitter-roberta-base-sentiment  # Pre-trained RoBERTa model for sentiment analysis
 
-  path_model: ../Data/Transformers models
+  path_model: ../Data/Data Transformers Text_Label models
 
 models_name:
 #  - roberta
@@ -31,8 +31,8 @@ params:
   shuffle: True  # Whether to shuffle the data during loading
   num_workers: 4  # Number of worker processes for data loading
 
-path_train_data: ../Data/Dataset final/Train  # Path to the directory containing training data
+path_train_data: ../Data/Dataset Text_Label/Train  # Path to the directory containing training data
 name_train_data: train_dataset.csv  # Filename for the training dataset
 
-path_test_data: ../Data/Dataset final/Test  # Path to the directory containing test data
+path_test_data: ../Data/Dataset Text_Label/Test  # Path to the directory containing test data
 name_test_data: test_dataset.csv  # Filename for the test dataset

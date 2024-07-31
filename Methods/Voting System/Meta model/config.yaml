@@ -1,7 +1,7 @@
 # Paths
 paths:
-  predictions: '../Data/Probabilities/Transformers/Predictions'
-  targets: '../Data/Probabilities/Transformers/Targets'
+  predictions: '../Data/Probabilities/Data Transformers Text_Label/Predictions'
+  targets: '../Data/Probabilities/Data Transformers Text_Label/Targets'
 
 # Model Trained and data parameters
 models_name:
