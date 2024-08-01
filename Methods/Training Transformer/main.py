@@ -1,12 +1,11 @@
-import numpy as np
 import torch
+import torch.nn.functional as F
 from sklearn.metrics import f1_score
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from transformers import AutoModel
-import torch.nn.functional as F
-from Methods.Interface.Interface import (CustomTransformerModel, CustomDataset,
-                                         LoadData)
+
+from Methods.Interface.Interface import (CustomTransformerModel, check_dataloader, check_dataset,
+                                         LoadData, initialise_model)
 from config_loader import config
 
 
@@ -35,7 +34,7 @@ def train(model, train_dataloader, device):
             model.zero_grad()
 
             # Forward pass
-            logits = model(ids,mask)
+            logits = model(ids, mask)
 
             loss = F.binary_cross_entropy_with_logits(logits, labels)
 
@@ -79,42 +78,19 @@ def test(model: CustomTransformerModel, test_dataloader: DataLoader, device: tor
     f1 = f1_score(initial_labels, initial_preds, average='weighted')
     return f1
 
-def initialise_model(model_name: str, device: torch.device):
-    base_model = AutoModel.from_pretrained(config['transformer']['tokenizer'][f'{model_name}'],
-                                           output_hidden_states=True)
-    model = CustomTransformerModel(base_model, False)
-    model.to(device)
-    return model
-
-def check_dataloader(dataloader: DataLoader):
-    num_batches_to_print = 1
-
-    # Iterate over the DataLoader and print batches
-    for batch_idx, batch in enumerate(dataloader):
-        print(f"Batch {batch_idx + 1}:")
-        print(batch)
-        # Break after printing the desired number of batches
-        if batch_idx + 1 == num_batches_to_print:
-            break
-def checkdataset(dataset: CustomDataset):
-    print(dataset.application)
-    for i in range(len(dataset)):
-        print(dataset[i])
-        if i == 5:
-            break
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+    percentage_of_data = config['percentage_of_data']
     for model_name in config['model_names']:
         # Load data
         print(f'Loading data for model {model_name}')
-        train_set, test_set = LoadData('transformer', model_name).__getattr__()
-        #checkdataset(test_set)
+        train_set, test_set = LoadData('transformer', model_name, percentage_of_data).__getattr__()
+        check_dataset(test_set)
 
         train_dataloader = DataLoader(train_set, batch_size=config['batch_size'], shuffle=True)
         test_dataloader = DataLoader(test_set, batch_size=config['batch_size'], shuffle=False)
-        #check_dataloader(test_dataloader)
+        check_dataloader(test_dataloader)
 
         # Check for the initial F1 score without training
         model = initialise_model(model_name, device)

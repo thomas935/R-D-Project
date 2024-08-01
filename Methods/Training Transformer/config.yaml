@@ -3,9 +3,12 @@ model_names:
   - sentiment
   - sexism
 
+path_to_content_root: ../../
+
 transformer:
-  path_to_train: ../../Data/Data Transformers Text_Label/Train
-  path_to_test: ../../Data/Data Transformers Text_Label/Test
+  path_to_train: Data/Data Transformers Text_Label/Train
+  path_to_test: Data/Data Transformers Text_Label/Test
+  path_to_model_trained : Data/Model Trained/Transformers
 
   tokenizer:
     roberta: roberta-base
@@ -24,3 +27,5 @@ model_class:
 
 num_epochs: 5
 learning_rate: 1e-5
+
+percentage_of_data: 0.01 # Value between 0 and 1

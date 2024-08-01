@@ -6,8 +6,8 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset
-from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast, PreTrainedTokenizer, AutoTokenizer
+from torch.utils.data import Dataset, DataLoader
+from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast, PreTrainedTokenizer, AutoTokenizer, AutoModel
 
 from config_loader import config
 
@@ -186,10 +186,11 @@ class CustomDataset(Dataset):
         return ""
 
 
-class LoadData():
-    def __init__(self, application, model_name):
+class LoadData:
+    def __init__(self, application, model_name, percentage_of_data=None):
         self.application = application
         self.model_name = model_name
+        self.percentage_of_data = percentage_of_data
 
         if self.application == 'transformer':
 
@@ -248,13 +249,14 @@ class LoadData():
 
             new_df = df[['text', 'list']].copy()
             new_df.columns = ['text', 'sexist_label']
-            new_df = new_df.sample(frac=0.01)
-            new_df = new_df.reset_index(drop=True)
+            if self.percentage_of_data:
+                new_df = new_df.sample(frac=self.percentage_of_data, random_state=42)
+                new_df = new_df.reset_index(drop=True)
             return new_df
 
-        path_to_train = Path(config['transformer']['path_to_train'])
+        path_to_train = Path(f"{config['path_to_content_root']}{config['transformer']['path_to_train']}")
         name_train_file = 'train_dataset.csv'
-        path_to_test = Path(config['transformer']['path_to_test'])
+        path_to_test = Path(f"{config['path_to_content_root']}{config['transformer']['path_to_test']}")
         name_test_file = 'test_dataset.csv'
 
         if os.path.exists(path_to_train):
@@ -353,3 +355,37 @@ class LoadData():
 def load_tokenizer(tokenizer_name):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
     return tokenizer
+
+
+def check_dataloader(dataloader: DataLoader):
+    num_batches_to_print = 1
+
+    # Iterate over the DataLoader and print batches
+    for batch_idx, batch in enumerate(dataloader):
+        print(f"Batch {batch_idx + 1}:")
+        print(batch)
+        # Break after printing the desired number of batches
+        if batch_idx + 1 == num_batches_to_print:
+            break
+
+
+def check_dataset(dataset: CustomDataset):
+    print(dataset.application)
+    for i in range(len(dataset)):
+        print(dataset[i])
+        if i == 5:
+            break
+
+
+def initialise_model(model_name: str, device: torch.device, embedding=False):
+    base_model = AutoModel.from_pretrained(config['transformer']['tokenizer'][f'{model_name}'],
+                                           output_hidden_states=True)
+    model = CustomTransformerModel(base_model, embedding)
+    return model
+
+
+def load_model(model_name: str, device: torch.device, embedding=False):
+    model = initialise_model(model_name, device, embedding)
+    model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    return model
