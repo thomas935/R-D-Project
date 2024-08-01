@@ -1,0 +1,31 @@
+model_names:
+  #- roberta
+  - sentiment
+  - sexism
+
+percentage_of_data: 0.01 # Value between 0 and 1
+
+batch_size: 4
+
+path_to_content_root: ../../../
+
+
+transformer:
+  path_to_train: Data/Data Transformers Text_Label/Train
+  path_to_test: Data/Data Transformers Text_Label/Test
+  path_to_model_trained : Data/Model Trained/Transformers
+
+  tokenizer:
+    roberta: roberta-base
+    sentiment: cardiffnlp/twitter-roberta-base-sentiment
+    sexism: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal
+
+model_class:
+  pre-classifier_outputs: 768
+  classifier_inputs: 768
+  dropout: 0.3
+  classifier_outputs: 2
+
+max_length: 128
+
+save: Data/Data Voting System/Transformer/

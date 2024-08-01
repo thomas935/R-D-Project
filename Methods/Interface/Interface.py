@@ -341,8 +341,13 @@ class LoadData:
         self.test_predictions = torch.tensor(probabilities[train_size:], dtype=torch.float32)
         self.test_targets = torch.tensor(targets[train_size:], dtype=torch.float32)
 
-    def __getattr__(self):
-        return self.train_set, self.test_set
+    def __getattr__(self, items=None):
+        if items == 'train_set':
+            return self.train_set
+        elif items == 'test_set':
+            return self.test_set
+        else:
+            return self.train_set, self.test_set
 
     def __getitem__(self, index):
         params = {
@@ -389,3 +394,12 @@ def load_model(model_name: str, device: torch.device, embedding=False):
     model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
     model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
     return model
+
+def get_outputs(batch, model, device):
+    ids = batch['ids'].to(device, dtype=torch.long)
+    mask = batch['mask'].to(device, dtype=torch.long)
+    label = batch['labels'].to(device, dtype=torch.float)
+
+    with torch.no_grad():
+        outputs = model(ids, mask)
+    return outputs, label

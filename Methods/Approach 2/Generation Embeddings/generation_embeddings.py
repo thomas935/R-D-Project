@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from Methods.Interface.Interface import LoadData, initialise_model, load_model
+from Methods.Interface.Interface import LoadData, initialise_model, load_model, get_outputs
 from config_loader import config
 
 
@@ -13,12 +13,7 @@ def generate_embeddings(model, dataloader, device, train, model_name):
     labels_list = []
 
     for batch in tqdm(dataloader, desc=f"Generating {model_name} embeddings"):
-        ids = batch['ids'].to(device, dtype=torch.long)
-        mask = batch['mask'].to(device, dtype=torch.long)
-        label = batch['labels'].to(device, dtype=torch.float)
-
-        with torch.no_grad():
-            outputs = model(ids, mask)
+        outputs, label = get_outputs(batch, model, device)
         embeddings = outputs.last_hidden_state
         flattened_embeddings = embeddings.view(embeddings.size(0), -1)
 
