@@ -1,7 +1,7 @@
 models:
   roberta:
     model_name: roberta-base
-      # Path to the RoBERTa model directory
+    # Path to the RoBERTa model directory
 
   sexism:
     model_name: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal  # Pre-trained XLM-RoBERTa model for sexism classification
@@ -12,7 +12,7 @@ models:
   path_model: ../Data/Data Transformers Text_Label models
 
 models_name:
-#  - roberta
+  #  - roberta
   - sentiment
 #  - sexism
 

@@ -1,20 +1,11 @@
-model_class:
-    pre-classifier_outputs : 768
-    classifier_inputs : 768
-    dropout : 0.3
-    classifier_outputs : 2
+LSTM:
+  embedding:
+    path_to_embedding: ../../Data/Dataset LSTM Embedding_Label/Embeddings
+    embeddings_shape: [ 128, 768 ]
+  path_to_label: ../../Data/Dataset LSTM Embedding_Label/Labels
 
-
-
-
-LSTM :
-    embedding :
-        path_to_embedding : ../../Data/Dataset LSTM Embedding_Label/Embeddings
-        embeddings_shape : [128, 768]
-    path_to_label : ../../Data/Dataset LSTM Embedding_Label/Labels
-
-MetaModel :
-    path_to_predictions_directory : ../../Data/MetaModel Predictions_Labels/Predictions
-    path_to_labels_directory : ../../Data/MetaModel Predictions_Labels/Labels
+MetaModel:
+  path_to_predictions_directory: ../../Data/MetaModel Predictions_Labels/Predictions
+  path_to_labels_directory: ../../Data/MetaModel Predictions_Labels/Labels
 
 

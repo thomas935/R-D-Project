@@ -1,15 +1,26 @@
 model_names:
-    - roberta
-    - sentiment
-    - sexism
+  - roberta
+  - sentiment
+  - sexism
 
 transformer:
-    path_to_train: ../../Data/Data Transformers Text_Label/Train
-    path_to_test: ../../Data/Data Transformers Text_Label/Test
+  path_to_train: ../../Data/Data Transformers Text_Label/Train
+  path_to_test: ../../Data/Data Transformers Text_Label/Test
 
-    tokenizer :
-        roberta : roberta-base
-        sentiment : cardiffnlp/twitter-roberta-base-sentiment
-        sexism : annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal
+  tokenizer:
+    roberta: roberta-base
+    sentiment: cardiffnlp/twitter-roberta-base-sentiment
+    sexism: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal
 
-max_length : 128
+max_length: 128
+
+batch_size: 4
+
+model_class:
+  pre-classifier_outputs: 768
+  classifier_inputs: 768
+  dropout: 0.3
+  classifier_outputs: 2
+
+num_epochs: 5
+learning_rate: 1e-5

@@ -1,15 +1,16 @@
+import os
+from pathlib import Path
+
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from matplotlib import pyplot as plt
-from pathlib import Path
-from torch.utils.data import Dataset, DataLoader
-from config_loader import config
+from torch.utils.data import Dataset
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast, PreTrainedTokenizer, AutoTokenizer
-import seaborn as sns
-import pandas as pd
-import os
+
+from config_loader import config
+
 
 class CustomTransformerModel(nn.Module):
     def __init__(self, base_model, generate_embeddings):
@@ -17,12 +18,17 @@ class CustomTransformerModel(nn.Module):
         self.base_model = base_model
         self.generate_embeddings = generate_embeddings
 
-        self.pre_classifier = torch.nn.Linear(base_model.config.hidden_size, config['pre-classifier_outputs'])  # Adjusted input size to match transformer output size
-        self.dropout = torch.nn.Dropout(config['dropout'])
-        self.classifier = nn.Linear(config['classifier_inputs'], config['classifier_outputs'])
+        self.pre_classifier = torch.nn.Linear(base_model.config.hidden_size, config['model_class'][
+            'pre-classifier_outputs'])  # Adjusted input size to match transformer output size
+        self.dropout = torch.nn.Dropout(config['model_class']['dropout'])
+        self.classifier = nn.Linear(config['model_class']['classifier_inputs'],
+                                    config['model_class']['classifier_outputs'])
 
     def forward(self, input_ids, attention_mask):
         if self.generate_embeddings:
+            outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask)
+            return outputs
+        else:
             outputs = self.base_model(input_ids=input_ids, attention_mask=attention_mask)
             cls_embedding = outputs.last_hidden_state[:, 0, :]  # [CLS] token's embedding
 
@@ -33,9 +39,8 @@ class CustomTransformerModel(nn.Module):
             outputs = self.classifier(x)
 
             return outputs
-        else:
-            outputs = self.l1(input_ids=input_ids, attention_mask=attention_mask)
-            return outputs
+
+
 class CustomDataset(Dataset):
     def __init__(self, application, **kwargs):
         """
@@ -118,66 +123,50 @@ class CustomDataset(Dataset):
 
             setattr(self, param, value)
 
-    def __getitem__(self):
+    def __getitem__(self, index):
         """
-        Retrieve an item from the dataset based on the application type.
+        Return the dataset item based on the application type.
+
+        Parameters:
+        - index (int): The index of the dataset item to retrieve.
         """
         if self.application == 'transformer':
-            return self._getitem_transformer()
+            text = self.texts[index]
+            label = torch.tensor(self.labels[index])
+
+            inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding="max_length",
+                                    max_length=config['max_length'])
+            ids = inputs['input_ids'].squeeze(0)
+            mask = inputs['attention_mask'].squeeze(0)
+
+            return {
+                'ids': torch.tensor(ids),
+                'mask': torch.tensor(mask),
+                'labels': torch.tensor(label)
+            }
+
         elif self.application == 'lstm':
-            return self._getitem_lstm()
+            return {
+                'embeddings': self.embeddings[index],
+                'labels': self.labels[index]
+            }
         elif self.application == 'metamodel':
-            return self._getitem_metamodel()
+            return {
+                'predictions': self.predictions[index],
+                'targets': self.targets[index]
+            }
         else:
-            raise ValueError(f'Unknown application type {self.application}')
-
-    def _getitem_transformer(self):
-        """
-        Get item for 'train transformer' application.
-        """
-        text = self.texts
-        label = self.labels
-        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding="max_length", max_length=config['max_length'])
-        inputs = {key: value.squeeze(0) for key, value in inputs.items()}
-        return inputs, label
-
-    def _getitem_lstm(self):
-        """
-        Get item for 'train lstm' application.
-        """
-        # Ensure embeddings and labels are not None
-        if self.embeddings is None or self.labels is None:
-            raise ValueError("Embeddings or labels are not provided for 'train lstm'.")
-
-        # Get embeddings and labels
-        embedding = self.embeddings
-        label = self.labels
-
-        return embedding, label
-
-    def _getitem_metamodel(self):
-        """
-        Get item for 'train metamodel' application.
-        """
-        # Ensure predictions and targets are not None
-        if self.predictions is None or self.targets is None:
-            raise ValueError("Predictions or targets are not provided for 'train metamodel'.")
-
-        # Get predictions and targets
-        prediction = self.predictions
-        target = self.targets
-
-        return prediction, target
+            raise ValueError(f"Unknown application type '{self.application}'")
 
     def __len__(self):
         """
         Return the length of the dataset based on the application type.
         """
-        if self.application == 'train transformer':
+        if self.application == 'transformer':
             return len(self.texts)
-        elif self.application == 'train lstm':
+        elif self.application == 'lstm':
             return len(self.embeddings)
-        elif self.application == 'train metamodel':
+        elif self.application == 'metamodel':
             return len(self.predictions)
         else:
             raise ValueError(f"Unknown application type '{self.application}'")
@@ -212,14 +201,14 @@ class LoadData():
                 'texts': self.train_texts,
                 'labels': self.train_labels,
             }
-            self.train_set = CustomDataset(application=application, **train_params).__getitem__()
+            self.train_set = CustomDataset(application=application, **train_params)
 
             test_params = {
                 'tokenizer': self.tokenizer,
                 'texts': self.test_texts,
                 'labels': self.test_labels,
             }
-            self.test_set = CustomDataset(application=application, **test_params).__getitem__()
+            self.test_set = CustomDataset(application=application, **test_params)
 
         elif self.application == 'lstm':
 
@@ -259,8 +248,8 @@ class LoadData():
 
             new_df = df[['text', 'list']].copy()
             new_df.columns = ['text', 'sexist_label']
-            # new_df = new_df.sample(frac=0.1)
-            # new_df = new_df.reset_index(drop=True)
+            new_df = new_df.sample(frac=0.01)
+            new_df = new_df.reset_index(drop=True)
             return new_df
 
         path_to_train = Path(config['transformer']['path_to_train'])
@@ -313,8 +302,12 @@ class LoadData():
             raise ValueError(f"Path to labels '{label_path}' does not exist.")
 
         if os.path.exists(embedding_path):
-            self.embedding_train =  torch.tensor(np.load(embedding_path / 'Train' / f'{model_name}_train_embeddings.npy').reshape(embedding_train_shape), dtype=torch.float32)
-            self.embedding_test =  torch.tensor(np.load(embedding_path / 'Test' / f'{model_name}_test_embeddings.npy').reshape(embedding_test_shape), dtype=torch.float32)
+            self.embedding_train = torch.tensor(
+                np.load(embedding_path / 'Train' / f'{model_name}_train_embeddings.npy').reshape(embedding_train_shape),
+                dtype=torch.float32)
+            self.embedding_test = torch.tensor(
+                np.load(embedding_path / 'Test' / f'{model_name}_test_embeddings.npy').reshape(embedding_test_shape),
+                dtype=torch.float32)
 
         else:
             raise ValueError(f"Path to embeddings '{embedding_path}' does not exist.")
@@ -339,22 +332,22 @@ class LoadData():
 
         if os.path.exists(path_to_targets):
             targets = np.load(path_to_targets / 'targets.npy')
-        #randomly select 80% of the data for training and 20% for testing
+        # randomly select 80% of the data for training and 20% for testing
         train_size = int(0.8 * len(probabilities))
         self.train_predictions = torch.tensor(probabilities[:train_size], dtype=torch.float32)
         self.train_targets = torch.tensor(targets[:train_size], dtype=torch.float32)
         self.test_predictions = torch.tensor(probabilities[train_size:], dtype=torch.float32)
         self.test_targets = torch.tensor(targets[train_size:], dtype=torch.float32)
 
-    def __getitem__(self):
-        if self.application == 'transformer':
-            return self.train_set, self.test_set
-        elif self.application == 'lstm':
-            return self.train_set, self.test_set
-        elif self.application == 'metamodel':
-            return self.train_set, self.test_set
-        else:
-            raise ValueError(f"Unknown application type '{self.application}'")
+    def __getattr__(self):
+        return self.train_set, self.test_set
+
+    def __getitem__(self, index):
+        params = {
+            'texts': self.train_texts[index],
+            'labels': self.train_labels[index]
+        }
+        return params
 
 
 def load_tokenizer(tokenizer_name):

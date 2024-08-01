@@ -27,8 +27,8 @@ data_loader_parameters:
   num_workers: 0
   shuffle: true
   persistent_workers: false
-  embeddings_train_shape: [22360, 128, 768]
-  embeddings_test_shape: [5623, 128, 768]
+  embeddings_train_shape: [ 22360, 128, 768 ]
+  embeddings_test_shape: [ 5623, 128, 768 ]
   embeddings_dtype: torch.float32
   labels_dtype: torch.float32
 
@@ -69,11 +69,11 @@ wandb_parameters:
 
 # Other parameters
 other_parameters:
-  columns: [hidden_dim, num_layers, F1_score, result]
+  columns: [ hidden_dim, num_layers, F1_score, result ]
   file_output: model_parameters.csv
   model_extension: .pth
   f1_score_calculation: weighted
-  metrics: [mean, sum]
+  metrics: [ mean, sum ]
 
 steps:
   - train

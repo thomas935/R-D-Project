@@ -1,5 +1,7 @@
+from typing import Dict, Any
+
 from dotenv import load_dotenv
-from typing import Dict, Any, Tuple
+
 load_dotenv(verbose=True)
 
 from config_loader import config
@@ -120,7 +122,6 @@ class CommentDataset(Dataset):
                 val_size = len(dataset) - train_size
                 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-
                 # Create DataLoaders for training and validation datasets
                 train_dataloader = DataLoader(
                     train_dataset,
@@ -164,8 +165,6 @@ def plot_label_distribution(dataset: CommentDataset, step: str):
     print(f'label count for step {step} : {label_counts}')
 
 
-
-
 class LSTMClassifier(L.LightningModule):
     def __init__(self, input_dim: int, hidden_dim: int, num_layers: int, num_classes: int):
         """
@@ -187,7 +186,8 @@ class LSTMClassifier(L.LightningModule):
         self.targets = torch.tensor([], dtype=torch.float32).to(self.device)
 
         # Initialize appropriate F1 score metric
-        self.metric = BinaryF1Score() if num_classes == 1 else MulticlassF1Score(num_classes=num_classes, average='weighted')
+        self.metric = BinaryF1Score() if num_classes == 1 else MulticlassF1Score(num_classes=num_classes,
+                                                                                 average='weighted')
         self.f1_score = 0
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -302,6 +302,8 @@ class LSTMClassifier(L.LightningModule):
                 'strict': config['scheduler']['strict']
             }
         }
+
+
 class LogF1ScoreCallback(Callback):
     def __init__(self, model, model_name=None, hidden_dim=None, num_layers=None):
         """
@@ -352,7 +354,9 @@ class LogF1ScoreCallback(Callback):
 
         # Log the F1 score using the trainer's logger
         trainer.logger.log_metrics({"Test_F1_score": self.model.f1_score})
-        plot_confusion_matrix(confusion_matrix(targets_np, predictions_np), self.model_name, self.hidden_dim, self.num_layers, self.model.f1_score)
+        plot_confusion_matrix(confusion_matrix(targets_np, predictions_np), self.model_name, self.hidden_dim,
+                              self.num_layers, self.model.f1_score)
+
 
 def plot_f1_score(dict_parameters: dict, model_name: str):
     """
@@ -391,6 +395,7 @@ def plot_f1_score(dict_parameters: dict, model_name: str):
     plt.ylabel('Hidden Dimensions')
     plt.show()
 
+
 def plot_confusion_matrix(cm: np.ndarray, model_name: str, hidden_dim: int, num_layers: int, f1_score: float):
     """
     Plots a confusion matrix heatmap.
@@ -416,6 +421,7 @@ def plot_confusion_matrix(cm: np.ndarray, model_name: str, hidden_dim: int, num_
 
     # Display the plot
     plt.show()
+
 
 def save_best_predictions(dict_parameters, model_name):
     """
@@ -463,6 +469,7 @@ def save_best_predictions(dict_parameters, model_name):
         np.save(path_predictions / name_save, predictions)
         np.save(path_targets / name_save, targets)
 
+
 def train():
     """
     Trains LSTM models with different configurations specified in the configuration file.
@@ -505,7 +512,7 @@ def train():
                 )
 
                 try:
-                # Train the model
+                    # Train the model
                     trainer.fit(model, train_dataloader, val_dataloader)
 
                     # Test the model
@@ -540,6 +547,7 @@ def train():
 
         # Save predictions and targets for the best models
         save_best_predictions(dict_model, model_name)
+
 
 if __name__ == '__main__':
     train()

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import lightning as L
 import numpy as np
 import pandas as pd
@@ -9,7 +11,6 @@ from torch import nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 from torcheval.metrics import BinaryF1Score
-from pathlib import Path
 
 L.seed_everything(42)
 from sklearn.model_selection import train_test_split
@@ -147,6 +148,7 @@ def plot_target_distribution(y_train, y_val, y_test):
     - y_val (numpy array): Target variable for the validation set.
     - y_test (numpy array): Target variable for the test set.
     """
+
     def count_labels(targets):
         unique, counts = np.unique(targets, return_counts=True)
         label_counts = dict(zip(unique, counts))
@@ -222,7 +224,7 @@ def concatenate_probabilities(directory):
 def get_targets(directory):
     file_name = 'Target (1).npy'
     arr = np.load(directory / file_name)
-    #arr = [np.argmax(pair) for pair in arr]
+    # arr = [np.argmax(pair) for pair in arr]
     print(f'Loaded targets from {file_name}')
     print(f'First 10 targets: {arr[:10]}')
     return arr
@@ -335,6 +337,7 @@ def plot_confusion_matrix(cm: np.ndarray, model_name: str, hidden_dim: int, num_
     # Display the plot
     plt.show()
 
+
 def plot_f1_score(dict_parameters: dict, model_name: str = 'MetaModel'):
     """
     Plots a heatmap of F1 scores for various hidden dimensions and number of layers.
@@ -401,7 +404,8 @@ def main():
                     logger=WandbLogger(),
                     callbacks=[
                         early_stopping_callback,
-                        LogF1ScoreCallback(metamodel, model_name='MetaModel', hidden_dim=hidd_size, num_layers=num_layer)
+                        LogF1ScoreCallback(metamodel, model_name='MetaModel', hidden_dim=hidd_size,
+                                           num_layers=num_layer)
                     ]
                 )
 
