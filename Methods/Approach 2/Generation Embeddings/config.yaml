@@ -1,7 +1,7 @@
 model_names:
   - roberta
-  - sentiment
-  - sexism
+  #- sentiment
+  #- sexism
 
 path_to_content_root: ../../../
 
@@ -17,7 +17,7 @@ transformer:
 
 save: Data/Data LSTM Embedding_Label/
 
-percentage_of_data: 0.01 # Value between 0 and 1
+percentage_of_data: 1 # Value between 0 and 1
 
 batch_size: 4
 

@@ -187,7 +187,7 @@ class CustomDataset(Dataset):
 
 
 class LoadData:
-    def __init__(self, application, model_name, percentage_of_data=None):
+    def __init__(self, application, model_name=None, percentage_of_data=None):
         self.application = application
         self.model_name = model_name
         self.percentage_of_data = percentage_of_data
@@ -315,14 +315,6 @@ class LoadData:
             raise ValueError(f"Path to embeddings '{embedding_path}' does not exist.")
 
     def load_metamodel_data(self):
-        def concatenate_probabilities(directory):
-            arr = []
-            for file_path in sorted(directory.iterdir()):
-                temp_arr = np.load(file_path)
-                arr.append(temp_arr)
-            arr = np.hstack(arr)
-
-            return arr
 
         path_to_predictions = Path(config['metamodel']['path_to_predictions'])
         path_to_targets = Path(config['metamodel']['path_to_targets'])
@@ -334,6 +326,9 @@ class LoadData:
 
         if os.path.exists(path_to_targets):
             targets = np.load(path_to_targets / 'targets.npy')
+        else:
+            raise ValueError(f"Path to targets '{path_to_targets}' does not exist.")
+
         # randomly select 80% of the data for training and 20% for testing
         train_size = int(0.8 * len(probabilities))
         self.train_predictions = torch.tensor(probabilities[:train_size], dtype=torch.float32)
@@ -403,3 +398,22 @@ def get_outputs(batch, model, device):
     with torch.no_grad():
         outputs = model(ids, mask)
     return outputs, label
+
+
+def concatenate_probabilities(directory):
+    arr = []
+    for file_path in sorted(directory.iterdir()):
+        temp_arr = np.load(file_path)
+        arr.append(temp_arr)
+    arr = np.hstack(arr)
+
+    return arr
+
+
+def get_model_probabilities(directory):
+    list_of_arrays = []
+    for file_path in sorted(directory.iterdir()):
+        temp_arr = np.load(file_path)
+        list_of_arrays.append(temp_arr)
+
+    return list_of_arrays

@@ -7,10 +7,6 @@ from tqdm import tqdm
 from Methods.Interface.Interface import LoadData, load_model, get_outputs
 from config_loader import config
 from sklearn.metrics import f1_score
-#import f1_score from sklearn
-
-
-
 
 
 def predict(model, dataloader, device, model_name):
@@ -31,13 +27,15 @@ def predict(model, dataloader, device, model_name):
     print(f'F1 score for model {model_name}: {f1}')
 
     path_to_predictions = Path(f"{config['path_to_content_root']}{config['save']}/Predictions")
+    print(f'Path to predictions: {path_to_predictions}')
     path_to_predictions.mkdir(parents=True, exist_ok=True)
 
     path_to_labels = Path(f"{config['path_to_content_root']}{config['save']}/Labels")
+    print(f'Path to labels: {path_to_labels}')
     path_to_labels.mkdir(parents=True, exist_ok=True)
 
-    torch.save(predictions, path_to_predictions / f'{model_name}_predictions.npy')
-    torch.save(labels, path_to_labels / f'{model_name}_labels.npy')
+    np.save(path_to_predictions/f'{model_name}_predictions.npy', predictions)
+    np.save(path_to_labels / 'labels.npy', labels)
 
 
 def main():

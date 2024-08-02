@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -13,29 +14,41 @@ def generate_embeddings(model, dataloader, device, train, model_name):
     labels_list = []
 
     for batch in tqdm(dataloader, desc=f"Generating {model_name} embeddings"):
+
         outputs, label = get_outputs(batch, model, device)
         embeddings = outputs.last_hidden_state
+
         flattened_embeddings = embeddings.view(embeddings.size(0), -1)
 
-        flattened_embeddings = flattened_embeddings.cpu().detach()
-        label = label.cpu().detach()
+        flattened_embeddings = flattened_embeddings.cpu().detach().numpy()
+        label = label.cpu().detach().numpy()
+        print(f'flattened_embeddings: {flattened_embeddings}')
+        print(f'len of flattened_embeddings: {len(flattened_embeddings)}')
+        print(f'len of flattened_embeddings[0]: {len(flattened_embeddings[0])}')
+        print(f'label: {label}')
 
         embeddings_list.append(flattened_embeddings)
         labels_list.append(label)
 
-        if train:
-            path_embeddings = Path(f"{config['path_to_content_root']}{config['save']}/Embeddings/Train")
-            path_labels = Path(f"{config['path_to_content_root']}{config['save']}/Labels/Train")
-        else:
-            path_embeddings = Path(f"{config['path_to_content_root']}{config['save']}/Embeddings/Test")
-            path_labels = Path(f"{config['path_to_content_root']}{config['save']}/Labels/Test")
+    embeddings_list = np.concatenate(embeddings_list)
+    labels_list = np.concatenate(labels_list)
 
-        # Use mkdir(parents=True) to avoid errors if the directory already exists
-        path_embeddings.mkdir(parents=True, exist_ok=True)
-        path_labels.mkdir(parents=True, exist_ok=True)
+    if train:
+        path_embeddings = Path(f"{config['path_to_content_root']}{config['save']}/Embeddings/Train")
+        path_labels = Path(f"{config['path_to_content_root']}{config['save']}/Labels/Train")
+    else:
+        path_embeddings = Path(f"{config['path_to_content_root']}{config['save']}/Embeddings/Test")
+        path_labels = Path(f"{config['path_to_content_root']}{config['save']}/Labels/Test")
 
-        torch.save(embeddings_list, path_embeddings / f'{model_name}_embeddings.npy')
-        torch.save(labels_list, path_labels / f'{model_name}_labels.npy')
+    # Use mkdir(parents=True) to avoid errors if the directory already exists
+    path_embeddings.mkdir(parents=True, exist_ok=True)
+    path_labels.mkdir(parents=True, exist_ok=True)
+
+    print(f'embeddings_list: {embeddings_list}')
+    print(f'labels_list: {labels_list}')
+
+    np.save(path_embeddings / f'{model_name}_embeddings.npy', embeddings_list)
+    np.save(path_labels / f'{model_name}_labels.npy', labels_list)
 
 
 def main():

@@ -1,9 +1,9 @@
 model_names:
-  #- roberta
+  - roberta
   - sentiment
   - sexism
 
-percentage_of_data: 0.01 # Value between 0 and 1
+percentage_of_data: 1 # Value between 0 and 1
 
 batch_size: 4
 
