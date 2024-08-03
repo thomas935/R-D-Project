@@ -1,80 +1,21 @@
-models_name:
+model_names:
   - roberta
-#  - sentiment
-#  - sexism
-# Model Trained parameters
-model_parameters:
-  train_hidden_dimensions:
-    - 128
-  train_numbers_layers:
-    - 1
+  - sentiment
+  - sexism
 
-  test_hidden_dimensions: 512
-  test_numbers_layers: 4
-  input_dim: 768
-  num_classes: 2
-  max_epochs: 20
-  learning_rate: 1e-5
-  batch_first: true
-  log_every_n_steps: 10
+path_to_content_root : ../../../
+path_to_embeddings : Data/Data LSTM Embedding_Label/Embeddings
+path_to_labels : Data/Data LSTM Embedding_Label/Labels
 
-# DataLoader parameters
-data_loader_parameters:
-  train_ratio: 0.9
-  val_ratio: 0.1
-  test_ratio: 1
-  batch_size: 16
-  num_workers: 0
-  shuffle: true
-  persistent_workers: false
-  embeddings_train_shape: [ 22360, 128, 768 ]
-  embeddings_test_shape: [ 5623, 128, 768 ]
-  embeddings_dtype: torch.float32
-  labels_dtype: torch.float32
+model_class :
+    classifier_outputs : 2
 
-# Scheduler parameters
-scheduler:
-  scheduler_name: ReduceLROnPlateau
-  mode: min
-  factor: 0.1
-  patience: 5
-  verbose: true
-  threshold: 1e-3
-  threshold_mode: rel
-  cooldown: 0
-  min_lr: 0
-  eps: 1e-08
-  interval: epoch
-  frequency: 1
-  monitor: val_loss
-  strict: true
+embedding_shape : [128, 768]
+batch_size : 4
 
-# Paths
-paths:
-  path_to_train_data: ../Data/Embeddings/Train
-  path_to_test_data: ../Data/Embeddings/Test
-  path_to_train_label: ../Data/Labels/Train
-  path_to_test_label: ../Data/Labels/Test
+transformer:
 
-  path_to_model_directory: ../Data/LSTM models
-
-save:
-  save_n_probability: 1
-  path_to_save_predictions: ../Data/Probabilities/Predictions
-  path_to_save_targets: ../Data/Probabilities/Targets
-
-# Wandb parameters
-wandb_parameters:
-  wandbproject: training-lstm
-
-# Other parameters
-other_parameters:
-  columns: [ hidden_dim, num_layers, F1_score, result ]
-  file_output: model_parameters.csv
-  model_extension: .pth
-  f1_score_calculation: weighted
-  metrics: [ mean, sum ]
-
-steps:
-  - train
-  - test
+  tokenizer:
+    roberta: roberta-base
+    sentiment: cardiffnlp/twitter-roberta-base-sentiment
+    sexism: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal

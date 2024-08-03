@@ -10,6 +10,8 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast, PreTrainedTokenizer, AutoTokenizer, AutoModel
 
 from config_loader import config
+import lightning as L
+
 
 
 class CustomTransformerModel(nn.Module):
@@ -215,13 +217,13 @@ class LoadData:
 
             self.load_lstm_data(model_name)
             train_params = {
-                'embeddings': self.embedding_train,
+                'embeddings': self.embeddings_train,
                 'labels': self.labels_train,
             }
             self.train_set = CustomDataset(application=application, **train_params)
 
             test_params = {
-                'embeddings': self.embedding_test,
+                'embeddings': self.embeddings_test,
                 'labels': self.labels_test,
             }
             self.test_set = CustomDataset(application=application, **test_params)
@@ -282,34 +284,33 @@ class LoadData:
         print(f"Test set: {len(self.test_texts)} samples")
 
     def load_lstm_data(self, model_name):
-        embedding_path = Path(config['LSTM']['embeddings']['path_to_embedding'])
-        label_path = Path(config['LSTM']['path_to_label'])
+        embedding_path = f"{config['path_to_content_root']}{config['path_to_embeddings']}"
+        label_path = f"{config['path_to_content_root']}{config['path_to_labels']}"
 
         if os.path.exists(label_path):
-            self.labels_train = torch.load(np.load(label_path / 'Train' / f'{model_name}_train_labels.npy').flatten())
-            self.labels_train = torch.nn.functional.one_hot(
-                self.labels_train,
-                num_classes=config['model_class']['classifier_outputs']
-            ).to(torch.float32)
-            embedding_train_shape = config['LSTM']['embeddings']['embeddings_shape']
-            embedding_train_shape[0] = len(self.labels_train)
+            self.labels_train = np.load(f"{label_path}/Train/{model_name}_labels.npy")
+            self.labels_train = torch.tensor(self.labels_train, dtype=torch.float32)
 
-            self.labels_test = torch.load(np.load(label_path / 'Test' / f'{model_name}_test_labels.npy').flatten())
-            self.labels_test = torch.nn.functional.one_hot(
-                self.labels_test,
-                num_classes=config['model_class']['classifier_outputs']
-            ).to(torch.float32)
-            embedding_test_shape = len(self.labels_test)
+            embeddings_train_shape = config['embedding_shape'].copy()
+            embeddings_train_shape.insert(0, len(self.labels_train))
+            print(embeddings_train_shape)
+
+            self.labels_test = np.load(f"{label_path}/Test/{model_name}_labels.npy")
+            self.labels_test = torch.tensor(self.labels_test, dtype=torch.float32)
+
+            embeddings_test_shape = config['embedding_shape'].copy()
+            embeddings_test_shape.insert(0, len(self.labels_test))
+            print(embeddings_test_shape)
+
         else:
             raise ValueError(f"Path to labels '{label_path}' does not exist.")
 
         if os.path.exists(embedding_path):
-            self.embedding_train = torch.tensor(
-                np.load(embedding_path / 'Train' / f'{model_name}_train_embeddings.npy').reshape(embedding_train_shape),
-                dtype=torch.float32)
-            self.embedding_test = torch.tensor(
-                np.load(embedding_path / 'Test' / f'{model_name}_test_embeddings.npy').reshape(embedding_test_shape),
-                dtype=torch.float32)
+            self.embeddings_train = np.load(f"{embedding_path}/Train/{model_name}_embeddings.npy").reshape(embeddings_train_shape)
+            self.embeddings_train = torch.tensor(self.embeddings_train, dtype=torch.float32)
+
+            self.embeddings_test = np.load(f"{embedding_path}/Test/{model_name}_embeddings.npy").reshape(embeddings_test_shape)
+            self.embeddings_test = torch.tensor(self.embeddings_test, dtype=torch.float32)
 
         else:
             raise ValueError(f"Path to embeddings '{embedding_path}' does not exist.")
@@ -377,18 +378,27 @@ def check_dataset(dataset: CustomDataset):
             break
 
 
-def initialise_model(model_name: str, device: torch.device, embedding=False):
-    base_model = AutoModel.from_pretrained(config['transformer']['tokenizer'][f'{model_name}'],
-                                           output_hidden_states=True)
-    model = CustomTransformerModel(base_model, embedding)
-    return model
+def initialise_model(model_name: str, application: str, embedding=False ):
+    if application == 'transformer':
+        base_model = AutoModel.from_pretrained(config['transformer']['tokenizer'][f'{model_name}'],
+                                               output_hidden_states=True)
+        model = CustomTransformerModel(base_model, embedding)
+        return model
+
+    elif application == 'lstm':
+        pass
 
 
-def load_model(model_name: str, device: torch.device, embedding=False):
-    model = initialise_model(model_name, device, embedding)
-    model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    return model
+def load_model(model_name: str, application: str, embedding=False):
+
+    if application == 'transformer':
+        model = initialise_model(model_name, application, embedding)
+        model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        return model
+
+    elif application == 'lstm':
+        pass
 
 def get_outputs(batch, model, device):
     ids = batch['ids'].to(device, dtype=torch.long)
