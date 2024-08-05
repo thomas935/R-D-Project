@@ -6,12 +6,129 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, random_split
+from torcheval.metrics import BinaryF1Score
 from transformers import PreTrainedTokenizerBase, PreTrainedTokenizerFast, PreTrainedTokenizer, AutoTokenizer, AutoModel
-
+from typing import Dict, Any, Tuple
 from config_loader import config
 import lightning as L
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
+
+class CustomLSTMModel(L.LightningModule):
+    def __init__(self, hidden_dim: int, num_layers: int):
+        super(CustomLSTMModel, self).__init__()
+        self.lstm = nn.LSTM(768, hidden_dim, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_dim, 2)
+        self.dropout = nn.Dropout(config['model_parameters']['dropout'])
+
+        self.criterion = nn.BCEWithLogitsLoss()
+        self.metric = BinaryF1Score()
+
+        self.predictions = torch.tensor([])
+        self.targets = torch.tensor([])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        lstm_out, _ = self.lstm(x)
+        lstm_out = self.fc(lstm_out[:, -1, :])
+        lstm_out = self.dropout(lstm_out)
+        return lstm_out
+
+    def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
+        """
+        Training step.
+
+        Parameters:
+        - batch (Tuple[torch.Tensor, torch.Tensor]): Input and target tensors.
+        - batch_idx (int): Index of the batch.
+
+        Returns:
+        - torch.Tensor: Loss value.
+        """
+        x, y = batch
+        y_hat = self(x)
+        loss = self.criterion(y_hat, y)
+        self.log("train_loss", loss)
+        return loss
+
+    def validation_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
+        """
+        Validation step.
+
+        Parameters:
+        - batch (Tuple[torch.Tensor, torch.Tensor]): Input and target tensors.
+        - batch_idx (int): Index of the batch.
+        """
+        x, y = batch
+        y_hat = self(x)
+
+        loss = self.criterion(y_hat, y)
+        self.log("val_loss", loss)
+
+        y_hat = torch.argmax(y_hat, dim=1)
+        y = torch.argmax(y, dim=1)
+
+        self.metric.update(y_hat, y)
+        self.log("Val_F1_score", self.metric.compute())
+
+    def on_validation_epoch_end(self) -> None:
+        """
+        Called at the end of validation epoch.
+        """
+        self.metric.reset()
+
+    def test_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> None:
+        """
+        Test step.
+
+        Parameters:
+        - batch (Tuple[torch.Tensor, torch.Tensor]): Input and target tensors.
+        - batch_idx (int): Index of the batch.
+        """
+        x, y = batch
+        pred = self(x)
+        loss = self.criterion(pred, y)
+        self.log("test_loss", loss)
+
+        # Concatenate predictions and targets
+        self.predictions = torch.cat([self.predictions, pred])
+        self.targets = torch.cat([self.targets, y])
+
+    def configure_optimizers(self) -> Dict[str, Any]:
+        """
+        Configures optimizers and learning rate schedulers.
+
+        Returns:
+        - Dict[str, Any]: Optimizer and scheduler configuration.
+        """
+        optimizer = torch.optim.Adam(self.parameters(), lr=float(config['model_parameters']['learning_rate']))
+
+        scheduler = ReduceLROnPlateau(optimizer,
+                                      mode=config['scheduler']['mode'],
+                                      factor=float(config['scheduler']['factor']),
+                                      patience=int(config['scheduler']['patience']),
+                                      threshold=float(config['scheduler']['threshold']))
+        return {
+            'optimizer': optimizer,
+            'lr_scheduler': {
+                'scheduler': scheduler,
+                'interval': config['scheduler']['interval'],
+                'frequency': config['scheduler']['frequency'],
+                'monitor': config['scheduler']['monitor'],
+                'strict': config['scheduler']['strict']
+            }
+        }
+
+    def on_test_end(self) -> None:
+        self.calculate_f1_score()
+
+    def calculate_f1_score(self):
+        self.predictions = torch.argmax(self.predictions, dim=1)
+        self.targets = torch.argmax(self.targets, dim=1)
+        self.metric.update(self.predictions, self.targets)
+        f1 = self.metric.compute()
+        print(f"F1 Score: {f1}")
+        self.logger.experiment.log({"F1 Score" : f1})
 
 
 class CustomTransformerModel(nn.Module):
@@ -148,10 +265,8 @@ class CustomDataset(Dataset):
             }
 
         elif self.application == 'lstm':
-            return {
-                'embeddings': self.embeddings[index],
-                'labels': self.labels[index]
-            }
+            return self.embeddings[index], self.labels[index]
+
         elif self.application == 'metamodel':
             return {
                 'predictions': self.predictions[index],
@@ -179,8 +294,10 @@ class CustomDataset(Dataset):
             print(f"Length of texts: {len(self.texts)}")
         if hasattr(self, 'labels'):
             print(f"Length of labels: {len(self.labels)}")
+            print(f"Labels: {self.labels}")
         if hasattr(self, 'embeddings'):
             print(f"Length of embeddings: {len(self.embeddings)}")
+            print(f"Embeddings: {self.embeddings}")
         if hasattr(self, 'predictions'):
             print(f"Length of predictions: {len(self.predictions)}")
         if hasattr(self, 'targets'):
@@ -221,7 +338,10 @@ class LoadData:
                 'labels': self.labels_train,
             }
             self.train_set = CustomDataset(application=application, **train_params)
+            train_size = int(config['model_parameters']['train_size']*len(self.train_set))
+            val_size = len(self.train_set) - train_size
 
+            self.train_set, self.val_set = torch.utils.data.random_split(self.train_set, [train_size, val_size])
             test_params = {
                 'embeddings': self.embeddings_test,
                 'labels': self.labels_test,
@@ -342,6 +462,8 @@ class LoadData:
             return self.train_set
         elif items == 'test_set':
             return self.test_set
+        elif self.application == 'lstm':
+            return self.train_set, self.val_set, self.test_set
         else:
             return self.train_set, self.test_set
 
@@ -378,7 +500,7 @@ def check_dataset(dataset: CustomDataset):
             break
 
 
-def initialise_model(model_name: str, application: str, embedding=False ):
+def initialise_model(application: str, model_name=None, embedding=None, lstm_params=None):
     if application == 'transformer':
         base_model = AutoModel.from_pretrained(config['transformer']['tokenizer'][f'{model_name}'],
                                                output_hidden_states=True)
@@ -386,7 +508,8 @@ def initialise_model(model_name: str, application: str, embedding=False ):
         return model
 
     elif application == 'lstm':
-        pass
+        model = CustomLSTMModel(lstm_params['hidden_dim'], lstm_params['num_layers'])
+        return model
 
 
 def load_model(model_name: str, application: str, embedding=False):
@@ -397,8 +520,6 @@ def load_model(model_name: str, application: str, embedding=False):
         model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         return model
 
-    elif application == 'lstm':
-        pass
 
 def get_outputs(batch, model, device):
     ids = batch['ids'].to(device, dtype=torch.long)

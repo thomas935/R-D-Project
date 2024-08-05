@@ -11,11 +11,38 @@ model_class :
     classifier_outputs : 2
 
 embedding_shape : [128, 768]
-batch_size : 4
+batch_size : 64
 
-transformer:
 
-  tokenizer:
-    roberta: roberta-base
-    sentiment: cardiffnlp/twitter-roberta-base-sentiment
-    sexism: annahaz/xlm-roberta-base-misogyny-sexism-indomain-mix-bal
+model_parameters:
+  train_hidden_dimensions:
+    - 128
+    - 256
+  train_numbers_layers:
+    - 1
+    - 2
+    - 3
+  train_size : 0.9
+  max_epochs: 10
+  learning_rate: 1e-5
+  dropout: 0.3
+wandb :
+  project : "Training LSTM"
+
+scheduler:
+  scheduler_name: ReduceLROnPlateau
+  mode: min
+  factor: 0.1
+  patience: 5
+  verbose: true
+  threshold: 1e-3
+  threshold_mode: rel
+  cooldown: 0
+  min_lr: 0
+  eps: 1e-08
+  interval: epoch
+  frequency: 1
+  monitor: val_loss
+  strict: true
+
+
