@@ -5,7 +5,7 @@ model_names:
 
 percentage_of_data: 1 # Value between 0 and 1
 
-batch_size: 4
+batch_size: 64
 
 path_to_content_root: ../../../
 

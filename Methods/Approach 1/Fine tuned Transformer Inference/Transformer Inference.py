@@ -49,7 +49,7 @@ def main():
 
         test_dataloader = DataLoader(test_set, batch_size=config['batch_size'], shuffle=False)
 
-        model = load_model(model_name, device, embedding=False)
+        model = load_model(model_name, 'transformer', embedding=False)
         model.to(device)
 
         predict(model, test_dataloader, device, model_name)

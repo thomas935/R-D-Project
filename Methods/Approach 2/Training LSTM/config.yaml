@@ -6,23 +6,22 @@ model_names:
 path_to_content_root : ../../../
 path_to_embeddings : Data/Data LSTM Embedding_Label/Embeddings
 path_to_labels : Data/Data LSTM Embedding_Label/Labels
+path_to_save : Data/Data Voting System/LSTM
+path_to_model_trained : Data/Model Trained/LSTM
 
 model_class :
     classifier_outputs : 2
 
 embedding_shape : [128, 768]
-batch_size : 64
+batch_size : 256
 
 
 model_parameters:
   train_hidden_dimensions:
-    - 128
-    - 256
+    - 8
   train_numbers_layers:
     - 1
-    - 2
-    - 3
-  train_size : 0.9
+  train_size : 0.5
   max_epochs: 10
   learning_rate: 1e-5
   dropout: 0.3

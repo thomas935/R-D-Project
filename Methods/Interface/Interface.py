@@ -16,11 +16,15 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
 class CustomLSTMModel(L.LightningModule):
-    def __init__(self, hidden_dim: int, num_layers: int):
+    def __init__(self, hidden_dim: int, num_layers: int, model_name: str):
         super(CustomLSTMModel, self).__init__()
-        self.lstm = nn.LSTM(768, hidden_dim, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_dim, 2)
-        self.dropout = nn.Dropout(config['model_parameters']['dropout'])
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.model_name = model_name
+
+        self.lstm = nn.LSTM(768, self.hidden_dim, self.num_layers, batch_first=True)
+        self.fc = nn.Linear(self.hidden_dim, 2)
+        #self.dropout = nn.Dropout(config['model_parameters']['dropout'])
 
         self.criterion = nn.BCEWithLogitsLoss()
         self.metric = BinaryF1Score()
@@ -31,7 +35,7 @@ class CustomLSTMModel(L.LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         lstm_out, _ = self.lstm(x)
         lstm_out = self.fc(lstm_out[:, -1, :])
-        lstm_out = self.dropout(lstm_out)
+        #lstm_out = self.dropout(lstm_out)
         return lstm_out
 
     def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
@@ -70,6 +74,8 @@ class CustomLSTMModel(L.LightningModule):
 
         self.metric.update(y_hat, y)
         self.log("Val_F1_score", self.metric.compute())
+
+
 
     def on_validation_epoch_end(self) -> None:
         """
@@ -121,6 +127,9 @@ class CustomLSTMModel(L.LightningModule):
 
     def on_test_end(self) -> None:
         self.calculate_f1_score()
+        self.save()
+        save_model(self, self.model_name, 'lstm')
+
 
     def calculate_f1_score(self):
         self.predictions = torch.argmax(self.predictions, dim=1)
@@ -129,6 +138,19 @@ class CustomLSTMModel(L.LightningModule):
         f1 = self.metric.compute()
         print(f"F1 Score: {f1}")
         self.logger.experiment.log({"F1 Score" : f1})
+
+    def save(self):
+        self.predictions = self.predictions.cpu().detach().numpy()
+        self.targets = self.targets.cpu().detach().numpy()
+
+        path_to_save = Path(config['path_to_content_root']) / config['path_to_save']
+        path_to_save.mkdir(parents=True, exist_ok=True)
+        # mkdir for predictions and targets
+        (path_to_save / 'Predictions').mkdir(parents=True, exist_ok=True)
+        (path_to_save / 'Targets').mkdir(parents=True, exist_ok=True)
+
+        np.save(path_to_save / 'Predictions' / f'Model_{self.model_name}_{self.num_layers}_{self.hidden_dim}_predictions.npy', self.predictions)
+        np.save(path_to_save / 'Targets' / f'Model_{self.model_name}_{self.num_layers}_{self.hidden_dim}_targets.npy', self.targets)
 
 
 class CustomTransformerModel(nn.Module):
@@ -338,16 +360,17 @@ class LoadData:
                 'labels': self.labels_train,
             }
             self.train_set = CustomDataset(application=application, **train_params)
+
             train_size = int(config['model_parameters']['train_size']*len(self.train_set))
             val_size = len(self.train_set) - train_size
 
             self.train_set, self.val_set = torch.utils.data.random_split(self.train_set, [train_size, val_size])
+
             test_params = {
                 'embeddings': self.embeddings_test,
                 'labels': self.labels_test,
             }
             self.test_set = CustomDataset(application=application, **test_params)
-
         elif self.application == 'metamodel':
 
             self.load_metamodel_data()
@@ -508,14 +531,14 @@ def initialise_model(application: str, model_name=None, embedding=None, lstm_par
         return model
 
     elif application == 'lstm':
-        model = CustomLSTMModel(lstm_params['hidden_dim'], lstm_params['num_layers'])
+        model = CustomLSTMModel(lstm_params['hidden_dim'], lstm_params['num_layers'], lstm_params['model_name'])
         return model
 
 
 def load_model(model_name: str, application: str, embedding=False):
 
     if application == 'transformer':
-        model = initialise_model(model_name, application, embedding)
+        model = initialise_model(application, model_name, embedding)
         model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
         model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         return model
@@ -548,3 +571,12 @@ def get_model_probabilities(directory):
         list_of_arrays.append(temp_arr)
 
     return list_of_arrays
+
+
+def save_model(model, model_name, application):
+    if application == 'transformer':
+        model_path = f"{config['path_to_content_root']}{config['transformer']['path_to_model_trained']}/{model_name}.pth"
+        torch.save(model.state_dict(), model_path)
+    elif application == 'lstm':
+        model_path = f"{config['path_to_content_root']}{config['path_to_model_trained']}/{model_name}.pth"
+        torch.save(model.state_dict(), model_path)

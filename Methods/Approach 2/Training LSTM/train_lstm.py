@@ -9,11 +9,13 @@ from config_loader import config
 
 
 def training(train_dataloader, val_dataloader, test_dataloader, device, model_name):
+
     for hidden_dim in config['model_parameters']['train_hidden_dimensions']:
         for num_layers in config['model_parameters']['train_numbers_layers']:
             params = {
                 'hidden_dim': hidden_dim,
-                'num_layers': num_layers
+                'num_layers': num_layers,
+                'model_name': model_name,
             }
             model = initialise_model('lstm', lstm_params=params)
             model.to(device)
@@ -56,8 +58,7 @@ def main():
 
         print(f'Data Loaded for {model_name} model')
         print(f'Let''s train the model')
-        training(train_dataloader,val_dataloader, test_dataloader, device, model_name)
-
+        training(train_dataloader, val_dataloader, test_dataloader, device, model_name)
 
 if __name__ == '__main__':
     main()
