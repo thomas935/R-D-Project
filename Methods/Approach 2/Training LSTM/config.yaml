@@ -1,6 +1,6 @@
 model_names:
-  - roberta
-  - sentiment
+  #- roberta
+  #- sentiment
   - sexism
 
 path_to_content_root : ../../../
@@ -18,10 +18,17 @@ batch_size : 256
 
 model_parameters:
   train_hidden_dimensions:
-    - 8
+    - 32
+    - 64
+    - 128
+    - 256
+
   train_numbers_layers:
     - 1
-  train_size : 0.5
+    - 2
+    - 3
+    - 4
+  train_size : 0.9
   max_epochs: 10
   learning_rate: 1e-5
   dropout: 0.3

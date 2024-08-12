@@ -6,6 +6,8 @@ from torch.utils.data import DataLoader
 
 from Methods.Interface.Interface import LoadData, initialise_model
 from config_loader import config
+L.seed_everything(42)
+
 
 
 def training(train_dataloader, val_dataloader, test_dataloader, device, model_name):
