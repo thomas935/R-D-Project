@@ -2,18 +2,20 @@
 
 ## Overview
 
-This project implements a research and development system using various machine learning models, including LSTM and a meta-model approach. The project is built using Python and leverages libraries such as PyTorch, Lightning, and WandB for training and logging.
+This project implements a research and development system using various machine learning models, including LSTM and a
+meta-model approach. The project is built using Python and leverages libraries such as PyTorch, Lightning, and WandB for
+training and logging.
 
 ## Project Structure
 
 - `Methods/Voting System/`
-  - `VotingSystem.py`: Contains functions for different voting mechanisms and evaluation metrics.
+    - `VotingSystem.py`: Contains functions for different voting mechanisms and evaluation metrics.
 - `Methods/Approach 2/Training LSTM/`
-  - `train_lstm.py`: Script for training LSTM models.
+    - `train_lstm.py`: Script for training LSTM models.
 - `Methods/Voting System/Meta model/`
-  - `Meta model.py`: Script for training meta-models.
+    - `Meta model.py`: Script for training meta-models.
 - `Methods/Interface/`
-  - `Interface.py`: Contains utility functions for loading data and initializing models.
+    - `Interface.py`: Contains utility functions for loading data and initializing models.
 - `config_loader.py`: Loads configuration settings for the project.
 
 ## Requirements
@@ -43,6 +45,7 @@ Update the `config_loader.py` file with the appropriate paths and parameters for
 ### Training LSTM Models
 
 To train LSTM models, run the following command:
+
 ```sh
 python Methods/Approach\ 2/Training\ LSTM/train_lstm.py
 ```
@@ -50,6 +53,7 @@ python Methods/Approach\ 2/Training\ LSTM/train_lstm.py
 ### Training Meta-Models
 
 To train meta-models, run the following command:
+
 ```sh
 python Methods/Voting\ System/Meta\ model/Meta\ model.py
 ```
@@ -57,6 +61,7 @@ python Methods/Voting\ System/Meta\ model/Meta\ model.py
 ### Voting System
 
 To evaluate the voting system, run the following command:
+
 ```sh
 python Methods/Voting\ System/VotingSystem.py
 ```
